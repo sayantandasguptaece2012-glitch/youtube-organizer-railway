@@ -987,7 +987,11 @@ def start_auth():
         
         flow = Flow.from_client_secrets_file(
             CREDENTIALS_PATH,
-            scopes=['https://www.googleapis.com/auth/youtube'],
+            scopes=[
+                'https://www.googleapis.com/auth/youtube',
+                'https://www.googleapis.com/auth/youtube.readonly',
+                'https://www.googleapis.com/auth/youtube.force-ssl'
+            ],
             redirect_uri=os.environ.get('OAUTH_REDIRECT_URI', 'http://localhost:8000/api/auth/callback')
         )
         
