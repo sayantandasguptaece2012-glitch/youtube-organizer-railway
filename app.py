@@ -742,12 +742,9 @@ def index():
     if not os.path.exists(token_path):
         return render_template_string(open('static/auth.html').read())
     
-    # For development, serve the full static HTML
-    if app.config['DEBUG']:
-        with open(os.path.join(SCRIPT_DIR, 'static', 'index.html'), 'r') as f:
-            return f.read()
-    
-    return PRODUCTION_HTML
+    # For production, serve the full static HTML
+    with open(os.path.join(SCRIPT_DIR, 'static', 'index.html'), 'r') as f:
+        return f.read()
 
 @app.route('/upload-credentials', methods=['POST'])
 def upload_credentials():
