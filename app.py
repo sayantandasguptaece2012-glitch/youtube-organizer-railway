@@ -908,7 +908,17 @@ def get_playlists():
         
     except Exception as e:
         logger.error(f"Error in get_playlists: {e}")
-        return jsonify({'error': str(e)}), 500
+        error_str = str(e)
+        # If scope mismatch, force re-authentication
+        if "Scope has changed" in error_str or "scope" in error_str.lower():
+            if os.path.exists(token_path):
+                try:
+                    os.remove(token_path)
+                    logger.info("Removed token due to scope mismatch")
+                except:
+                    pass
+            return jsonify({'error': 'Authentication scope mismatch. Please re-authenticate.'}), 401
+        return jsonify({'error': error_str}), 500
 
 @app.route('/api/playlist/<playlist_id>', methods=['GET'])
 def get_playlist_videos(playlist_id):
