@@ -1,4 +1,6 @@
-"""
+railway login
+railway link  # Connect to your project
+railway add -f credentials.json"""
 Production-ready YouTube Organizer Web Application
 """
 
@@ -21,6 +23,17 @@ logger = logging.getLogger(__name__)
 # Get directory where this script is running
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CREDENTIALS_PATH = os.environ.get('CREDENTIALS_PATH', os.path.join(SCRIPT_DIR, 'credentials.json'))
+
+# If credentials file doesn't exist but GOOGLE_CREDENTIALS env var is set, create it
+if not os.path.exists(CREDENTIALS_PATH) and os.environ.get('GOOGLE_CREDENTIALS'):
+    try:
+        import json
+        credentials_data = json.loads(os.environ['GOOGLE_CREDENTIALS'])
+        with open(CREDENTIALS_PATH, 'w') as f:
+            json.dump(credentials_data, f)
+        logger.info("Created credentials.json from environment variable")
+    except Exception as e:
+        logger.error(f"Failed to create credentials.json from env var: {e}")
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
