@@ -810,6 +810,8 @@ def get_playlists():
             with open(token_path, 'rb') as token:
                 creds = pickle.load(token)
             
+            logger.info(f"Loaded token with scopes: {getattr(creds, 'scopes', 'unknown')}")
+            
             # Build service directly
             from googleapiclient.discovery import build
             service = build('youtube', 'v3', credentials=creds)
@@ -997,11 +999,7 @@ def start_auth():
         
         flow = Flow.from_client_secrets_file(
             CREDENTIALS_PATH,
-            scopes=[
-                'https://www.googleapis.com/auth/youtube',
-                'https://www.googleapis.com/auth/youtube.readonly',
-                'https://www.googleapis.com/auth/youtube.force-ssl'
-            ],
+            scopes=['https://www.googleapis.com/auth/youtube'],
             redirect_uri=os.environ.get('OAUTH_REDIRECT_URI', 'http://localhost:8000/api/auth/callback')
         )
         
@@ -1041,6 +1039,8 @@ def auth_callback():
         
         flow.fetch_token(code=auth_code)
         creds = flow.credentials
+        
+        logger.info(f"Auth successful, token scopes: {creds.scopes}")
         
         # Save credentials
         import pickle
