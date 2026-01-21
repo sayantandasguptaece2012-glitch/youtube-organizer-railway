@@ -1,0 +1,6 @@
+
+# Sensitive files
+token.pickle
+credentials.json
+__pycache__/
+.DS_Store
