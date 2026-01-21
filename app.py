@@ -1,6 +1,4 @@
-railway login
-railway link  # Connect to your project
-railway add -f credentials.json"""
+"""
 Production-ready YouTube Organizer Web Application
 """
 
