@@ -730,6 +730,22 @@ PRODUCTION_HTML = """
 </html>
 """
 
+@app.route('/app')
+def main_app():
+    """Serve the main application page after authentication."""
+    # Check if credentials exist
+    if not os.path.exists(CREDENTIALS_PATH):
+        return redirect('/')
+    
+    # Check if authenticated
+    token_path = os.path.join(SCRIPT_DIR, 'token.pickle')
+    if not os.path.exists(token_path):
+        return redirect('/')
+    
+    # Serve the main application
+    with open(os.path.join(SCRIPT_DIR, 'static', 'index.html'), 'r') as f:
+        return f.read()
+
 @app.route('/')
 def index():
     """Serve main HTML page or setup page."""
@@ -737,14 +753,17 @@ def index():
     if not os.path.exists(CREDENTIALS_PATH):
         return render_template_string(open('static/setup.html').read())
     
-    # Check if authenticated
+    # Force re-authentication on every visit by removing existing token
     token_path = os.path.join(SCRIPT_DIR, 'token.pickle')
-    if not os.path.exists(token_path):
-        return render_template_string(open('static/auth.html').read())
+    if os.path.exists(token_path):
+        try:
+            os.remove(token_path)
+            logger.info("Removed existing token to force re-authentication")
+        except Exception as e:
+            logger.warning(f"Could not remove token file: {e}")
     
-    # For production, serve the full static HTML
-    with open(os.path.join(SCRIPT_DIR, 'static', 'index.html'), 'r') as f:
-        return f.read()
+    # Always serve auth page to require fresh authentication
+    return render_template_string(open('static/auth.html').read())
 
 @app.route('/upload-credentials', methods=['POST'])
 def upload_credentials():
@@ -1016,8 +1035,8 @@ def auth_callback():
         if youtube_manager:
             youtube_manager.service = service
         
-        # Redirect to main app
-        return redirect('/')
+        # Redirect to main app after successful authentication
+        return redirect('/app')
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
