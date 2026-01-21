@@ -816,6 +816,12 @@ def get_playlists():
             
         except Exception as e:
             logger.error(f"Authentication error: {e}")
+            # If authentication fails (e.g., scope mismatch), remove token and require re-auth
+            if os.path.exists(token_path):
+                try:
+                    os.remove(token_path)
+                except:
+                    pass
             return jsonify({'error': 'Authentication failed. Please re-authenticate.'}), 401
         
         # Use the authenticated service directly instead of YouTubeManager
