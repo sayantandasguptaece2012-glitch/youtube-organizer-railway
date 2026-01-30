@@ -575,25 +575,30 @@
                 return card;
             }
 
-            async showPlaylistVideos(playlist, type) {
+            async showPlaylistVideos(playlistIdOrObj, type) {
                 const modal = document.getElementById('playlistModal');
                 const modalTitle = document.getElementById('modalTitle');
                 const modalVideos = document.getElementById('modalVideos');
 
-                modalTitle.textContent = playlist.title;
+                // Handle both playlist object and playlist ID
+                const playlistId = typeof playlistIdOrObj === 'string' ? playlistIdOrObj : playlistIdOrObj.id;
+                const playlistTitle = typeof playlistIdOrObj === 'string' ? 'Playlist Videos' : playlistIdOrObj.title;
+
+                modalTitle.textContent = playlistTitle;
                 modalVideos.innerHTML = '<div class="text-center py-8"><div class="loading-spinner mx-auto mb-4"></div><p class="text-gray-600">Loading videos...</p></div>';
                 modal.classList.remove('hidden');
 
                 try {
-                    const response = await fetch(`/api/playlist/${playlist.id}?type=${type}`);
+                    const response = await fetch(`/api/playlist/${playlistId}?type=${type}`);
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                     }
                     const videos = await response.json();
                     this.renderVideos(videos);
                 } catch (error) {
                     console.error('Error loading videos:', error);
-                    modalVideos.innerHTML = '<p class="text-red-500 text-center">Failed to load videos</p>';
+                    modalVideos.innerHTML = `<p class="text-red-500 text-center">Failed to load videos: ${error.message}</p>`;
                 }
             }
 
