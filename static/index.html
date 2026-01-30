@@ -527,7 +527,7 @@
 
             createPlaylistCard(playlist, type) {
                 const card = document.createElement('div');
-                card.className = 'playlist-card bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg';
+                card.className = 'playlist-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg';
                 
                 const iconClass = playlist.icon || 'list';
                 const colorClass = playlist.color || 'blue';
@@ -560,10 +560,10 @@
                                 ${new Date(playlist.published_at).toLocaleDateString()}
                             </span>
                             <div class="flex space-x-2">
-                                <button class="text-blue-500 hover:text-blue-700 text-sm font-medium" onclick="event.stopPropagation(); window.app.showPlaylistVideos('${playlist.id}', '${type}')">
+                                <button class="text-blue-500 hover:text-blue-700 text-sm font-medium" onclick="window.app.showPlaylistVideos('${playlist.id}', '${type}')">
                                     View Videos <i class="fas fa-arrow-right ml-1"></i>
                                 </button>
-                                <button class="text-green-500 hover:text-green-700 text-sm font-medium" onclick="event.stopPropagation(); window.app.openCategoryEdit('${playlist.id}')">
+                                <button class="text-green-500 hover:text-green-700 text-sm font-medium" onclick="window.app.openCategoryEdit('${playlist.id}')">
                                     <i class="fas fa-edit"></i>
                                 </button>
                             </div>
@@ -571,7 +571,7 @@
                     </div>
                 `;
 
-                card.addEventListener('click', () => this.showPlaylistVideos(playlist, type));
+                // Don't add click event to the card itself
                 return card;
             }
 
