@@ -925,17 +925,57 @@ def get_playlists():
 @app.route('/api/playlist/<playlist_id>', methods=['GET'])
 def get_playlist_videos(playlist_id):
     """Get videos from a specific playlist."""
-    global youtube_manager
     
     try:
-        if not youtube_manager:
-            return jsonify({'error': 'Not authenticated'}), 401
+        # Check if authenticated
+        token_path = os.path.join(SCRIPT_DIR, 'token.pickle')
+        if not os.path.exists(token_path):
+            return jsonify({'error': 'Not authenticated. Please authenticate first.'}), 401
+        
+        # Load credentials and build service
+        try:
+            import pickle
+            with open(token_path, 'rb') as token:
+                creds = pickle.load(token)
+            
+            from googleapiclient.discovery import build
+            service = build('youtube', 'v3', credentials=creds)
+            
+        except Exception as e:
+            logger.error(f"Authentication error: {e}")
+            return jsonify({'error': 'Authentication failed. Please re-authenticate.'}), 401
         
         playlist_type = request.args.get('type', 'user')
-        max_results = int(request.args.get('max_results', 25))
+        max_results = int(request.args.get('max_results', 50))
         
-        videos = youtube_manager.get_playlist_videos(playlist_id, max_results)
+        # Get playlist items
+        videos = []
+        next_page_token = None
         
+        while len(videos) < max_results:
+            playlist_items_response = service.playlistItems().list(
+                part='snippet,contentDetails',
+                playlistId=playlist_id,
+                maxResults=min(50, max_results - len(videos)),
+                pageToken=next_page_token
+            ).execute()
+            
+            for item in playlist_items_response.get('items', []):
+                video_data = {
+                    'video_id': item['contentDetails']['videoId'],
+                    'title': item['snippet']['title'],
+                    'description': item['snippet'].get('description', ''),
+                    'published_at': item['snippet']['publishedAt'],
+                    'thumbnail_url': item['snippet']['thumbnails'].get('high', {}).get('url', 
+                                     item['snippet']['thumbnails'].get('default', {}).get('url', ''))
+                }
+                videos.append(video_data)
+            
+            next_page_token = playlist_items_response.get('nextPageToken')
+            if not next_page_token:
+                break
+        
+        logger.info(f"Retrieved {len(videos)} videos from playlist {playlist_id}")
         return jsonify(videos)
         
     except Exception as e:
