@@ -414,9 +414,10 @@
 
                 // Get playlists to display (filtered or all)
                 const playlistsToShow = this.searchQuery ? this.filteredPlaylists : (this.playlists.user_playlists || []);
+                const sortedPlaylistsToShow = this.sortPlaylists([...playlistsToShow]);
                 
-                // Build category summary from filtered playlists if searching
-                const categorySummary = this.searchQuery ? this.buildCategorySummary(playlistsToShow) : this.categorySummary;
+                // Build category summary from sorted playlists
+                const categorySummary = this.buildCategorySummary(sortedPlaylistsToShow);
 
                 const categories = Object.keys(categorySummary).filter(category => 
                     categorySummary[category].playlist_count > 0
@@ -429,7 +430,7 @@
                 });
 
                 // Show uncategorized section if needed
-                const uncategorized = playlistsToShow.filter(p => p.category === 'Other') || [];
+                const uncategorized = sortedPlaylistsToShow.filter(p => p.category === 'Other') || [];
                 if (uncategorized.length > 0) {
                     const uncategorizedSection = document.getElementById('uncategorizedPlaylists');
                     uncategorizedSection.classList.remove('hidden');
@@ -446,11 +447,7 @@
 
             buildCategorySummary(playlists) {
                 const summary = {};
-                
-                // Sort playlists first
-                const sortedPlaylists = this.sortPlaylists([...playlists]);
-                
-                sortedPlaylists.forEach(playlist => {
+                playlists.forEach(playlist => {
                     const category = playlist.category || 'Other';
                     if (!summary[category]) {
                         summary[category] = {
