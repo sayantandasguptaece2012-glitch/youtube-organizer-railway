@@ -86,6 +86,28 @@
             </div>
         </div>
 
+        <!-- Search Bar -->
+        <div id="searchBar" class="hidden bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex items-center space-x-4">
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Search playlists by name, description, or content..." 
+                        class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                    <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <button id="clearSearch" class="hidden px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Clear
+                </button>
+            </div>
+            <div id="searchResults" class="mt-4 text-sm text-gray-600 hidden">
+                <i class="fas fa-info-circle mr-1"></i>
+                <span id="searchResultsText"></span>
+            </div>
+        </div>
+
         <!-- Category Filter -->
         <div id="categoryFilter" class="hidden bg-white rounded-lg shadow-md p-6 mb-8">
             <h3 class="text-lg font-bold text-gray-800 mb-4">Filter by Category</h3>
@@ -252,6 +274,8 @@
                 this.categorySummary = {};
                 this.currentFilter = 'all';
                 this.editingPlaylist = null;
+                this.searchQuery = '';
+                this.filteredPlaylists = [];
                 this.init();
             }
 
@@ -267,6 +291,11 @@
                 document.getElementById('closeCategoryModal').addEventListener('click', () => this.closeCategoryModal());
                 document.getElementById('cancelCategoryEdit').addEventListener('click', () => this.closeCategoryModal());
                 document.getElementById('saveCategoryEdit').addEventListener('click', () => this.saveCategoryEdit());
+                
+                // Search functionality
+                const searchInput = document.getElementById('searchInput');
+                searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+                document.getElementById('clearSearch').addEventListener('click', () => this.clearSearch());
                 
                 // Close modal on background click
                 document.getElementById('playlistModal').addEventListener('click', (e) => {
@@ -331,6 +360,7 @@
                 
                 document.getElementById('channelInfo').classList.remove('hidden');
                 document.getElementById('statsCards').classList.remove('hidden');
+                document.getElementById('searchBar').classList.remove('hidden');
                 document.getElementById('categoryFilter').classList.remove('hidden');
                 document.getElementById('playlistsContainer').classList.remove('hidden');
             }
@@ -367,18 +397,24 @@
                 const container = document.getElementById('categoriesContainer');
                 container.innerHTML = '';
 
-                const categories = Object.keys(this.categorySummary).filter(category => 
-                    this.categorySummary[category].playlist_count > 0
-                ).sort((a, b) => this.categorySummary[b].playlist_count - this.categorySummary[a].playlist_count);
+                // Get playlists to display (filtered or all)
+                const playlistsToShow = this.searchQuery ? this.filteredPlaylists : (this.playlists.user_playlists || []);
+                
+                // Build category summary from filtered playlists if searching
+                const categorySummary = this.searchQuery ? this.buildCategorySummary(playlistsToShow) : this.categorySummary;
+
+                const categories = Object.keys(categorySummary).filter(category => 
+                    categorySummary[category].playlist_count > 0
+                ).sort((a, b) => categorySummary[b].playlist_count - categorySummary[a].playlist_count);
 
                 categories.forEach(category => {
-                    const categoryData = this.categorySummary[category];
+                    const categoryData = categorySummary[category];
                     const categorySection = this.createCategorySection(category, categoryData);
                     container.appendChild(categorySection);
                 });
 
                 // Show uncategorized section if needed
-                const uncategorized = this.playlists.user_playlists?.filter(p => p.category === 'Other') || [];
+                const uncategorized = playlistsToShow.filter(p => p.category === 'Other') || [];
                 if (uncategorized.length > 0) {
                     const uncategorizedSection = document.getElementById('uncategorizedPlaylists');
                     uncategorizedSection.classList.remove('hidden');
@@ -388,7 +424,65 @@
                         const card = this.createPlaylistCard(playlist, 'user');
                         uncategorizedContainer.appendChild(card);
                     });
+                } else {
+                    document.getElementById('uncategorizedPlaylists').classList.add('hidden');
                 }
+            }
+
+            buildCategorySummary(playlists) {
+                const summary = {};
+                playlists.forEach(playlist => {
+                    const category = playlist.category || 'Other';
+                    if (!summary[category]) {
+                        summary[category] = {
+                            playlist_count: 0,
+                            total_videos: 0,
+                            playlists: []
+                        };
+                    }
+                    summary[category].playlist_count++;
+                    summary[category].total_videos += playlist.video_count || 0;
+                    summary[category].playlists.push(playlist);
+                });
+                return summary;
+            }
+
+            handleSearch(query) {
+                this.searchQuery = query.toLowerCase().trim();
+                
+                const clearBtn = document.getElementById('clearSearch');
+                const searchResults = document.getElementById('searchResults');
+                const searchResultsText = document.getElementById('searchResultsText');
+                
+                if (this.searchQuery) {
+                    clearBtn.classList.remove('hidden');
+                    
+                    // Filter playlists
+                    this.filteredPlaylists = (this.playlists.user_playlists || []).filter(playlist => {
+                        const titleMatch = playlist.title.toLowerCase().includes(this.searchQuery);
+                        const descMatch = (playlist.description || '').toLowerCase().includes(this.searchQuery);
+                        const categoryMatch = (playlist.category || '').toLowerCase().includes(this.searchQuery);
+                        return titleMatch || descMatch || categoryMatch;
+                    });
+                    
+                    // Show results count
+                    searchResults.classList.remove('hidden');
+                    searchResultsText.textContent = `Found ${this.filteredPlaylists.length} playlist${this.filteredPlaylists.length !== 1 ? 's' : ''} matching "${query}"`;
+                    
+                    // Re-render with filtered results
+                    this.renderCategorizedPlaylists();
+                } else {
+                    this.clearSearch();
+                }
+            }
+
+            clearSearch() {
+                this.searchQuery = '';
+                this.filteredPlaylists = [];
+                document.getElementById('searchInput').value = '';
+                document.getElementById('clearSearch').classList.add('hidden');
+                document.getElementById('searchResults').classList.add('hidden');
+                this.renderCategorizedPlaylists();
             }
 
             createCategorySection(categoryName, categoryData) {
