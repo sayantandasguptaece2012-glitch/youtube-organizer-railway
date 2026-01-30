@@ -110,7 +110,18 @@
 
         <!-- Category Filter -->
         <div id="categoryFilter" class="hidden bg-white rounded-lg shadow-md p-6 mb-8">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Filter by Category</h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Filter by Category</h3>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-gray-600">Sort by:</label>
+                    <select id="sortSelect" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="name-asc">A to Z</option>
+                        <option value="name-desc">Z to A</option>
+                        <option value="date-newest">Date Added (Newest First)</option>
+                        <option value="date-oldest">Date Added (Oldest First)</option>
+                    </select>
+                </div>
+            </div>
             <div class="flex flex-wrap gap-2" id="categoryButtons">
                 <button class="category-btn px-4 py-2 rounded-full bg-blue-500 text-white" data-category="all">
                     All Playlists
@@ -276,6 +287,7 @@
                 this.editingPlaylist = null;
                 this.searchQuery = '';
                 this.filteredPlaylists = [];
+                this.sortOrder = 'name-asc';
                 this.init();
             }
 
@@ -296,6 +308,9 @@
                 const searchInput = document.getElementById('searchInput');
                 searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
                 document.getElementById('clearSearch').addEventListener('click', () => this.clearSearch());
+                
+                // Sort functionality
+                document.getElementById('sortSelect').addEventListener('change', (e) => this.handleSort(e.target.value));
                 
                 // Close modal on background click
                 document.getElementById('playlistModal').addEventListener('click', (e) => {
@@ -431,7 +446,11 @@
 
             buildCategorySummary(playlists) {
                 const summary = {};
-                playlists.forEach(playlist => {
+                
+                // Sort playlists first
+                const sortedPlaylists = this.sortPlaylists([...playlists]);
+                
+                sortedPlaylists.forEach(playlist => {
                     const category = playlist.category || 'Other';
                     if (!summary[category]) {
                         summary[category] = {
@@ -445,6 +464,28 @@
                     summary[category].playlists.push(playlist);
                 });
                 return summary;
+            }
+
+            sortPlaylists(playlists) {
+                return playlists.sort((a, b) => {
+                    switch(this.sortOrder) {
+                        case 'name-asc':
+                            return a.title.localeCompare(b.title);
+                        case 'name-desc':
+                            return b.title.localeCompare(a.title);
+                        case 'date-newest':
+                            return new Date(b.published_at) - new Date(a.published_at);
+                        case 'date-oldest':
+                            return new Date(a.published_at) - new Date(b.published_at);
+                        default:
+                            return 0;
+                    }
+                });
+            }
+
+            handleSort(sortValue) {
+                this.sortOrder = sortValue;
+                this.renderCategorizedPlaylists();
             }
 
             handleSearch(query) {
