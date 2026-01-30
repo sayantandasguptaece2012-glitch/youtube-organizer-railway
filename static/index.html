@@ -19,6 +19,14 @@
         .video-item:hover {
             background-color: rgba(59, 130, 246, 0.05);
         }
+        .video-thumbnail {
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .video-thumbnail:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
         .loading-spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #3498db;
@@ -611,9 +619,9 @@
                 }
 
                 modalVideos.innerHTML = videos.map(video => `
-                    <div class="video-item flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                        <a href="https://youtube.com/watch?v=${video.video_id}" target="_blank">
-                            <img src="${video.thumbnail_url}" alt="${video.title}" class="w-24 h-16 object-cover rounded hover:opacity-80 transition-opacity cursor-pointer flex-shrink-0">
+                    <div class="video-item flex items-start space-x-3 p-3 rounded-lg transition-colors">
+                        <a href="https://youtube.com/watch?v=${video.video_id}" target="_blank" class="video-thumbnail flex-shrink-0">
+                            <img src="${video.thumbnail_url}" alt="${video.title}" class="w-24 h-16 object-cover rounded">
                         </a>
                         <div class="flex-1 min-w-0">
                             <a href="https://youtube.com/watch?v=${video.video_id}" target="_blank" class="block no-underline">
